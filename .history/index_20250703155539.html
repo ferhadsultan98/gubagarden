@@ -98,16 +98,6 @@
             max-height: 100px;
             margin-top: 10px;
         }
-        .search-container {
-            margin-bottom: 20px;
-        }
-        .search-container input {
-            width: 100%;
-            max-width: 300px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
@@ -158,20 +148,17 @@
                 <label>Name (Ru)</label>
                 <input type="text" id="nameRu" required>
                 <label>Description (Az)</label>
-                <input type="text" id="descAz" required>
+                <input type="text" id="descAz" >
                 <label>Description (En)</label>
-                <input type="text" id="descEn" required>
+                <input type="text" id="descEn" >
                 <label>Description (Ru)</label>
-                <input type="text" id="descRu" required>
+                <input type="text" id="descRu" >
                 <label>Price</label>
                 <input type="number" id="price" step="0.01" required>
                 <label>Category</label>
                 <select id="productCategory" required></select>
                 <button onclick="saveProduct()">Save Product</button>
                 <button onclick="resetProductForm()" style="background: #6c757d;">Reset</button>
-            </div>
-            <div class="search-container">
-                <input type="text" id="productSearch" placeholder="Search products...">
             </div>
             <table id="productTable">
                 <thead>
@@ -198,7 +185,6 @@
         const API_URL = 'http://172.20.10.89:8001/api/';
         const PRODUCTS_URL = `${API_URL}products/`;
         const CATEGORIES_URL = `${API_URL}categories/`;
-        let allProducts = []; // Store all products for search filtering
 
         function showSection(sectionId) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -241,49 +227,32 @@
         async function fetchProducts() {
             try {
                 const response = await fetch(PRODUCTS_URL);
-                allProducts = await response.json();
-                renderProducts(allProducts);
+                const products = await response.json();
+                const tbody = document.querySelector('#productTable tbody');
+                tbody.innerHTML = '';
+                
+                products.forEach(product => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td><img src="${product.image_url}" style="max-width:100px;"></td>
+                        <td>${product.name.Az}</td>
+                        <td>${product.name.En}</td>
+                        <td>${product.name.Ru}</td>
+                        <td>${product.desc.Az}</td>
+                        <td>${product.desc.En}</td>
+                        <td>${product.desc.Ru}</td>
+                        <td>${product.price}</td>
+                        <td>${product.type.En}</td>
+                        <td>
+                            <button class="edit-btn" onclick="editProduct('${product.id}')">Edit</button>
+                            <button class="delete-btn" onclick="deleteProduct('${product.id}')">Delete</button>
+                        </td>
+                    `;
+                });
             } catch (error) {
                 console.error('Error fetching products:', error);
             }
-        }
-
-        function renderProducts(products) {
-            const tbody = document.querySelector('#productTable tbody');
-            tbody.innerHTML = '';
-            
-            products.forEach(product => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${product.id}</td>
-                    <td><img src="${product.image_url}" style="max-width:100px;"></td>
-                    <td>${product.name.Az}</td>
-                    <td>${product.name.En}</td>
-                    <td>${product.name.Ru}</td>
-                    <td>${product.desc.Az}</td>
-                    <td>${product.desc.En}</td>
-                    <td>${product.desc.Ru}</td>
-                    <td>${product.price}</td>
-                    <td>${product.type.En}</td>
-                    <td>
-                        <button class="edit-btn" onclick="editProduct('${product.id}')">Edit</button>
-                        <button class="delete-btn" onclick="deleteProduct('${product.id}')">Delete</button>
-                    </td>
-                `;
-            });
-        }
-
-        function searchProducts() {
-            const query = document.getElementById('productSearch').value.toLowerCase();
-            const filteredProducts = allProducts.filter(product => 
-                product.name.Az.toLowerCase().includes(query) ||
-                product.name.En.toLowerCase().includes(query) ||
-                product.name.Ru.toLowerCase().includes(query) ||
-                product.desc.Az.toLowerCase().includes(query) ||
-                product.desc.En.toLowerCase().includes(query) ||
-                product.desc.Ru.toLowerCase().includes(query)
-            );
-            renderProducts(filteredProducts);
         }
 
         async function saveCategory() {
@@ -430,8 +399,6 @@
             document.getElementById('price').value = '';
             document.getElementById('productCategory').value = '';
             document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('productSearch').value = ''; // Clear search input
-            renderProducts(allProducts); // Reset to show all products
         }
 
         document.getElementById('productImage').addEventListener('change', (e) => {
@@ -446,8 +413,6 @@
                 reader.readAsDataURL(file);
             }
         });
-
-        document.getElementById('productSearch').addEventListener('input', searchProducts);
 
         fetchCategories();
         fetchProducts();
